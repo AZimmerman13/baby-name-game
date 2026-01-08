@@ -40,8 +40,11 @@ function Home() {
   return (
     <div className="container">
       <div className="header">
-        <h1>Baby Name Guessing Game</h1>
-        <p>Create a fun guessing game for your friends and family!</p>
+        <h1>🥚 Stork Pool</h1>
+        <p>The fun way to guess baby names, gender, and birthdays!</p>
+        <p style={{ fontSize: '0.9rem', color: '#a0aec0', marginTop: '8px' }}>
+          Perfect for baby showers, office pools, and family betting games
+        </p>
       </div>
 
       <div className="card">
@@ -76,12 +79,17 @@ function Home() {
             <strong>How it works:</strong>
           </p>
           <ol style={{ marginTop: '12px', paddingLeft: '20px', color: '#718096' }}>
-            <li>Create a pool and share the link with friends</li>
-            <li>Everyone submits up to 5 name guesses (hedge your bets!)</li>
-            <li>Guesses remain hidden until you reveal the actual name</li>
-            <li>Scores are based on each player's best guess</li>
-            <li>See who guessed closest with our smart scoring system!</li>
+            <li>Create a free baby name guessing pool and share the link</li>
+            <li>Everyone submits up to 6 name guesses (hedge your bets!)</li>
+            <li>All guesses remain hidden until you reveal the actual baby name</li>
+            <li>Our smart scoring algorithm finds each player's best guess</li>
+            <li>See the leaderboard and find out who won the baby pool!</li>
           </ol>
+          <p style={{ marginTop: '16px', fontSize: '0.9rem', color: '#718096' }}>
+            <strong>Why Stork Pool?</strong> Create unlimited baby prediction pools, baby shower games,
+            office betting pools, or family name contests. No sign-up required! Track gender reveals,
+            birthday predictions, and name guesses all in one place.
+          </p>
         </div>
       </div>
     </div>

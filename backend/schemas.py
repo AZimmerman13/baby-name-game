@@ -57,9 +57,9 @@ class PoolCreatedResponse(BaseModel):
 
 # Guess Schemas
 class GuessCreate(BaseModel):
-    """Schema for creating a new guess (1-5 names)"""
+    """Schema for creating a new guess (1-6 names)"""
     player_name: str = Field(..., min_length=1, max_length=100)
-    guessed_names: List[str] = Field(..., min_length=1, max_length=5)
+    guessed_names: List[str] = Field(..., min_length=1, max_length=6)
 
     @field_validator('player_name')
     @classmethod
@@ -73,8 +73,8 @@ class GuessCreate(BaseModel):
     def validate_guessed_names(cls, v):
         if not v or len(v) == 0:
             raise ValueError('Must provide at least 1 name')
-        if len(v) > 5:
-            raise ValueError('Cannot provide more than 5 names')
+        if len(v) > 6:
+            raise ValueError('Cannot provide more than 6 names')
 
         # Validate each name
         cleaned_names = []

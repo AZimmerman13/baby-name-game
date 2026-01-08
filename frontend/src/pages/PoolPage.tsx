@@ -18,7 +18,7 @@ function PoolPage() {
 
   // Guess form state
   const [playerName, setPlayerName] = useState<string>('');
-  const [guessedNames, setGuessedNames] = useState<string[]>(['', '', '', '', '']);
+  const [guessedNames, setGuessedNames] = useState<string[]>(['', '', '', '', '', '']);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   // Reveal form state

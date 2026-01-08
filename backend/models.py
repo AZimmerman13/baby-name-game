@@ -31,13 +31,13 @@ class Pool(Base):
 
 
 class Guess(Base):
-    """Guess model for storing participant guesses (up to 5 names)"""
+    """Guess model for storing participant guesses (up to 6 names)"""
     __tablename__ = "guesses"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     pool_id = Column(String, ForeignKey("pools.id"), nullable=False)
     player_name = Column(String, nullable=False)
-    guessed_names = Column(JSON, nullable=False)  # Array of 1-5 names
+    guessed_names = Column(JSON, nullable=False)  # Array of 1-6 names
     submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     score = Column(Float, nullable=True)  # Best score from all guesses
     best_guess = Column(String, nullable=True)  # The name that got the best score

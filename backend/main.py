@@ -18,8 +18,8 @@ limiter = Limiter(key_func=get_remote_address)
 
 # Create FastAPI app
 app = FastAPI(
-    title="Baby Name Guessing Game API",
-    description="API for a fun baby name guessing game with friends",
+    title="Stork Pool API",
+    description="API for baby name, gender, and birthday guessing pools",
     version="1.0.0"
 )
 

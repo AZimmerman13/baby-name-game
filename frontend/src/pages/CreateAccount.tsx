@@ -6,8 +6,8 @@ function CreateAccount() {
   return (
     <div className="container">
       <div className="header">
-        <h1>Create Account</h1>
-        <p>Save your pools and never lose them!</p>
+        <h1>🥚 Stork Pool Account</h1>
+        <p>Save your baby guessing pools and never lose them!</p>
       </div>
 
       <div className="card">
