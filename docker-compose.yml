@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: baby-name-backend
+    volumes:
+      - backend-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///./data/baby_name_game.db
+      - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
+      - CORS_ORIGINS=https://${DOMAIN}
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-20}
+    restart: unless-stopped
+    networks:
+      - baby-name-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: baby-name-frontend
+    environment:
+      - REACT_APP_API_URL=/api
+    restart: unless-stopped
+    networks:
+      - baby-name-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: baby-name-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf.template:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - nginx-logs:/var/log/nginx
+    environment:
+      - DOMAIN=${DOMAIN}
+    command: /bin/sh -c "envsubst '$$DOMAIN' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    networks:
+      - baby-name-network
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: baby-name-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    restart: unless-stopped
+    networks:
+      - baby-name-network
+
+volumes:
+  backend-data:
+    driver: local
+  nginx-logs:
+    driver: local
+
+networks:
+  baby-name-network:
+    driver: bridge

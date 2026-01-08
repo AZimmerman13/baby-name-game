@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: baby-name-backend-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - backend-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///./data/baby_name_game.db
+      - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY:-dev-secret-key-change-me}
+      - CORS_ORIGINS=http://localhost,http://localhost:80,http://localhost:3000
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-20}
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+    networks:
+      - baby-name-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: baby-name-frontend-dev
+    environment:
+      - REACT_APP_API_URL=/api
+    restart: unless-stopped
+    networks:
+      - baby-name-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: baby-name-nginx-dev
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d/dev.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    networks:
+      - baby-name-network
+
+volumes:
+  backend-data:
+    driver: local
+
+networks:
+  baby-name-network:
+    driver: bridge
