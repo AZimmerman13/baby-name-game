@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getResults } from '../services/api';
 import type { ResultsResponse } from '../types/api';
 import axios from 'axios';
+import Navigation from '../components/Navigation';
 
 function ResultsPage() {
   const { poolId } = useParams<{ poolId: string }>();
@@ -55,32 +56,44 @@ function ResultsPage() {
 
   if (loading) {
     return (
-      <div className="loading">
-        <div className="spinner"></div>
-        <p>Loading results...</p>
-      </div>
+      <>
+        <Navigation />
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Loading results...</p>
+        </div>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="container">
-        <div className="card">
-          <div className="error-message">{error}</div>
-          <button onClick={() => navigate('/')} className="btn btn-primary" style={{ marginTop: '16px' }}>
-            Go Home
-          </button>
+      <>
+        <Navigation />
+        <div className="container">
+          <div className="card">
+            <div className="error-message">{error}</div>
+            <button onClick={() => navigate('/')} className="btn btn-primary" style={{ marginTop: '16px' }}>
+              Go Home
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (!results) {
-    return null;
+    return (
+      <>
+        <Navigation />
+      </>
+    );
   }
 
   return (
-    <div className="container">
+    <>
+      <Navigation />
+      <div className="container">
       <div className="header">
         <h1>Results</h1>
         <p>Pool by {results.creator_name}</p>
@@ -109,7 +122,7 @@ function ResultsPage() {
           </div>
           {results.leaderboard.length > 0 && (
             <div className="stat">
-              <div className="stat-value">{results.leaderboard[0].score.toFixed(1)}</div>
+              <div className="stat-value">{results.leaderboard[0].total_score?.toFixed(1) || '0.0'}</div>
               <div className="stat-label">Top Score</div>
             </div>
           )}
@@ -131,16 +144,50 @@ function ResultsPage() {
                 </div>
                 <div className="leaderboard-content">
                   <div className="leaderboard-name">{entry.player_name}</div>
-                  <div className="leaderboard-guess">
-                    Best: <strong>{entry.best_guess}</strong>
-                    {entry.guessed_names.length > 1 && (
-                      <span style={{ fontSize: '0.85em', color: '#a0aec0', marginLeft: '8px' }}>
-                        (also guessed: {entry.guessed_names.filter(n => n !== entry.best_guess).join(', ')})
+                  {entry.best_guess && (
+                    <div className="leaderboard-guess">
+                      Best: <strong>{entry.best_guess}</strong>
+                      {entry.guessed_names.length > 1 && (
+                        <span style={{ fontSize: '0.85em', color: '#a0aec0', marginLeft: '8px' }}>
+                          (also guessed: {entry.guessed_names.filter(n => n !== entry.best_guess).join(', ')})
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '0.85em', color: '#718096', marginTop: '8px' }}>
+                    {entry.name_score !== null && (
+                      <span style={{ marginRight: '12px' }}>
+                        Name: {entry.name_score.toFixed(1)}
+                      </span>
+                    )}
+                    {entry.date_score !== null && (
+                      <span style={{ marginRight: '12px' }}>
+                        Date: {entry.date_score.toFixed(1)}
+                      </span>
+                    )}
+                    {entry.sex_score !== null && (
+                      <span style={{ marginRight: '12px' }}>
+                        Sex: {entry.sex_score.toFixed(1)}
+                      </span>
+                    )}
+                    {entry.time_score !== null && (
+                      <span style={{ marginRight: '12px' }}>
+                        Time: {entry.time_score.toFixed(1)}
+                      </span>
+                    )}
+                    {entry.weight_score !== null && (
+                      <span style={{ marginRight: '12px' }}>
+                        Weight: {entry.weight_score.toFixed(1)}
+                      </span>
+                    )}
+                    {entry.custom_score !== null && (
+                      <span style={{ marginRight: '12px' }}>
+                        Custom: {entry.custom_score.toFixed(1)}
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="leaderboard-score">{entry.score.toFixed(1)}</div>
+                <div className="leaderboard-score">{entry.total_score?.toFixed(1) || '0.0'}</div>
               </div>
             ))}
           </div>
@@ -158,7 +205,8 @@ function ResultsPage() {
           Create New Pool
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

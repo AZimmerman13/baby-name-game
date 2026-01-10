@@ -24,10 +24,23 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: baby-name-frontend-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      # Exclude node_modules from volume mount (use container's version)
+      - /app/node_modules
     environment:
       - REACT_APP_API_URL=/api
+      - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=3000
+    stdin_open: true
+    tty: true
     restart: unless-stopped
     networks:
       - baby-name-network

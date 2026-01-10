@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     backend_port: int = 8000
     admin_secret_key: str = "change-this-in-production"
 
+    # JWT Authentication
+    jwt_secret_key: str = "CHANGE-THIS-SECRET-KEY-IN-PRODUCTION-USE-RANDOM-STRING"
+    cookie_secure: bool = False  # Set to True in production (HTTPS)
+
     # CORS
     cors_origins: str = "http://localhost:3000"
 

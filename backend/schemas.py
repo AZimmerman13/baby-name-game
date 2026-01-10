@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, field_validator
-from datetime import datetime
+from pydantic import BaseModel, Field, field_validator, model_validator
+from datetime import datetime, date, time
 from typing import Optional, List
 from models import PoolStatus
 
@@ -9,6 +9,18 @@ class PoolCreate(BaseModel):
     """Schema for creating a new pool"""
     creator_name: str = Field(..., min_length=1, max_length=100)
 
+    # Category toggles
+    enable_name: bool = True
+    enable_date: bool = False
+    enable_sex: bool = False
+    enable_time: bool = False
+    enable_weight: bool = False
+    enable_custom: bool = False
+
+    # Pool configuration
+    due_date: Optional[date] = None
+    custom_category_name: Optional[str] = Field(None, max_length=100)
+
     @field_validator('creator_name')
     @classmethod
     def validate_creator_name(cls, v):
@@ -16,18 +28,62 @@ class PoolCreate(BaseModel):
             raise ValueError('Creator name cannot be empty or whitespace')
         return v.strip()
 
+    @field_validator('custom_category_name')
+    @classmethod
+    def validate_custom_category_name(cls, v):
+        if v and not v.strip():
+            raise ValueError('Custom category name cannot be empty or whitespace')
+        return v.strip() if v else None
+
+    @model_validator(mode='after')
+    def validate_at_least_one_category(self):
+        """Ensure at least one category is enabled"""
+        if not any([
+            self.enable_name,
+            self.enable_date,
+            self.enable_sex,
+            self.enable_time,
+            self.enable_weight,
+            self.enable_custom
+        ]):
+            raise ValueError('At least one category must be enabled')
+        return self
+
 
 class PoolReveal(BaseModel):
-    """Schema for revealing the baby name"""
-    baby_name: str = Field(..., min_length=1, max_length=100)
+    """Schema for revealing the baby name and other actual values"""
+    baby_name: Optional[str] = Field(None, min_length=1, max_length=100)
     admin_token: str = Field(..., min_length=1)
+
+    # Actual values for other categories (optional based on what's enabled)
+    birth_date: Optional[date] = None
+    sex: Optional[str] = Field(None, max_length=50)
+    birth_time: Optional[time] = None
+    weight: Optional[float] = Field(None, gt=0, le=50)  # in pounds, reasonable range
+    custom_value: Optional[str] = Field(None, max_length=100)
 
     @field_validator('baby_name')
     @classmethod
     def validate_baby_name(cls, v):
+        if v is None:
+            return None
         if not v.strip():
             raise ValueError('Baby name cannot be empty or whitespace')
         return v.strip()
+
+    @field_validator('sex')
+    @classmethod
+    def validate_sex(cls, v):
+        if v and not v.strip():
+            raise ValueError('Sex cannot be empty or whitespace')
+        return v.strip() if v else None
+
+    @field_validator('custom_value')
+    @classmethod
+    def validate_custom_value(cls, v):
+        if v and not v.strip():
+            raise ValueError('Custom value cannot be empty or whitespace')
+        return v.strip() if v else None
 
 
 class PoolResponse(BaseModel):
@@ -37,6 +93,21 @@ class PoolResponse(BaseModel):
     status: PoolStatus
     created_at: datetime
     participant_count: int
+
+    # Category toggles (which predictions are enabled)
+    enable_name: bool
+    enable_date: bool
+    enable_sex: bool
+    enable_time: bool
+    enable_weight: bool
+    enable_custom: bool
+
+    # Pool configuration (visible to participants)
+    due_date: Optional[date] = None
+    custom_category_name: Optional[str] = None
+
+    # Ownership indicator (for frontend logic)
+    is_owner: bool = False
 
     class Config:
         from_attributes = True
@@ -57,9 +128,16 @@ class PoolCreatedResponse(BaseModel):
 
 # Guess Schemas
 class GuessCreate(BaseModel):
-    """Schema for creating a new guess (1-6 names)"""
+    """Schema for creating a new guess (1-6 names plus optional other predictions)"""
     player_name: str = Field(..., min_length=1, max_length=100)
     guessed_names: List[str] = Field(..., min_length=1, max_length=6)
+
+    # Other predictions (optional - only filled if category enabled)
+    guessed_birth_date: Optional[date] = None
+    guessed_sex: Optional[str] = Field(None, max_length=50)
+    guessed_birth_time: Optional[time] = None
+    guessed_weight: Optional[float] = Field(None, gt=0, le=50)  # in pounds
+    guessed_custom_value: Optional[str] = Field(None, max_length=100)
 
     @field_validator('player_name')
     @classmethod
@@ -79,18 +157,41 @@ class GuessCreate(BaseModel):
         # Validate each name
         cleaned_names = []
         for name in v:
-            if not isinstance(name, str) or not name.strip():
+            if not isinstance(name, str):
+                raise ValueError('All names must be strings')
+            # Allow empty string if it's the only name (for pools without name category)
+            if not name.strip() and len(v) > 1:
                 raise ValueError('All names must be non-empty strings')
             cleaned_name = name.strip()
             if len(cleaned_name) > 100:
                 raise ValueError('Each name must be 100 characters or less')
-            cleaned_names.append(cleaned_name)
+            # Only add non-empty names to the list
+            if cleaned_name:
+                cleaned_names.append(cleaned_name)
 
-        # Check for duplicates
+        # If all names were empty, return a list with one empty string
+        if not cleaned_names:
+            return ['']
+
+        # Check for duplicates (excluding empty strings)
         if len(cleaned_names) != len(set(cleaned_names)):
             raise ValueError('Duplicate names are not allowed')
 
         return cleaned_names
+
+    @field_validator('guessed_sex')
+    @classmethod
+    def validate_guessed_sex(cls, v):
+        if v and not v.strip():
+            raise ValueError('Guessed sex cannot be empty or whitespace')
+        return v.strip() if v else None
+
+    @field_validator('guessed_custom_value')
+    @classmethod
+    def validate_guessed_custom_value(cls, v):
+        if v and not v.strip():
+            raise ValueError('Guessed custom value cannot be empty or whitespace')
+        return v.strip() if v else None
 
 
 class GuessResponse(BaseModel):
@@ -118,13 +219,21 @@ class GuessResultResponse(BaseModel):
 
 # Results Schemas
 class LeaderboardEntry(BaseModel):
-    """Schema for leaderboard entry"""
+    """Schema for leaderboard entry with individual category scores"""
     rank: int
     player_name: str
     guessed_names: List[str]
-    best_guess: str
-    score: float
+    best_guess: Optional[str] = None
     submitted_at: datetime
+
+    # Individual scores for each category
+    name_score: Optional[float] = None
+    date_score: Optional[float] = None
+    sex_score: Optional[float] = None
+    time_score: Optional[float] = None
+    weight_score: Optional[float] = None
+    custom_score: Optional[float] = None
+    total_score: Optional[float] = None
 
 
 class ResultsResponse(BaseModel):
@@ -137,3 +246,83 @@ class ResultsResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# User Authentication Schemas
+class UserRegister(BaseModel):
+    """Schema for user registration"""
+    email: str = Field(..., min_length=3, max_length=255)
+    password: str = Field(..., min_length=8, max_length=128)
+    display_name: str = Field(..., min_length=1, max_length=100)
+
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        """Basic email validation"""
+        v = v.strip().lower()
+        if '@' not in v or '.' not in v.split('@')[1]:
+            raise ValueError('Invalid email format')
+        return v
+
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v):
+        """Validate password strength"""
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        return v
+
+    @field_validator('display_name')
+    @classmethod
+    def validate_display_name(cls, v):
+        if not v.strip():
+            raise ValueError('Display name cannot be empty')
+        return v.strip()
+
+
+class UserLogin(BaseModel):
+    """Schema for user login"""
+    email: str = Field(..., min_length=3, max_length=255)
+    password: str = Field(..., min_length=1, max_length=128)
+
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        return v.strip().lower()
+
+
+class UserResponse(BaseModel):
+    """Schema for user response (public info only)"""
+    id: str
+    email: str
+    display_name: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PoolLinkRequest(BaseModel):
+    """Schema for linking an anonymous pool to user account"""
+    admin_token: str = Field(..., min_length=1)
+
+
+class PoolUpdateRequest(BaseModel):
+    """Schema for updating pool settings"""
+    creator_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    due_date: Optional[date] = None
+    custom_category_name: Optional[str] = Field(None, max_length=100)
+
+    @field_validator('creator_name')
+    @classmethod
+    def validate_creator_name(cls, v):
+        if v and not v.strip():
+            raise ValueError('Creator name cannot be empty')
+        return v.strip() if v else None
+
+    @field_validator('custom_category_name')
+    @classmethod
+    def validate_custom_category_name(cls, v):
+        if v and not v.strip():
+            raise ValueError('Custom category name cannot be empty')
+        return v.strip() if v else None

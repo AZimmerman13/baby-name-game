@@ -82,35 +82,201 @@ def calculate_score(guessed_name: str, actual_name: str) -> float:
     return min(score, 99.99)
 
 
-def calculate_scores_for_guesses(guesses: list, actual_name: str) -> list:
+def calculate_date_score(guessed_date, actual_date) -> float:
     """
-    Calculate scores for all guesses and return sorted by score.
-    Each player can have multiple guessed names - we take their best score.
+    Calculate score for birth date guess based on days difference.
+    Perfect guess = 100 points, decreases by 5 points per day difference.
 
     Args:
-        guesses: List of Guess objects (each with guessed_names array)
-        actual_name: The actual baby name
+        guessed_date: The guessed birth date
+        actual_date: The actual birth date
 
     Returns:
-        List of guesses sorted by score (highest first)
+        Score between 0 and 100
+    """
+    if guessed_date is None or actual_date is None:
+        return 0.0
+
+    # Calculate days difference
+    days_diff = abs((actual_date - guessed_date).days)
+
+    # Perfect match
+    if days_diff == 0:
+        return 100.0
+
+    # Decrease by 5 points per day, minimum 0
+    score = max(0, 100 - (days_diff * 5))
+    return float(score)
+
+
+def calculate_sex_score(guessed_sex: str, actual_sex: str) -> float:
+    """
+    Calculate score for sex guess (binary - either correct or not).
+
+    Args:
+        guessed_sex: The guessed sex
+        actual_sex: The actual sex
+
+    Returns:
+        100 for correct, 0 for incorrect
+    """
+    if guessed_sex is None or actual_sex is None:
+        return 0.0
+
+    guess_norm = normalize_name(guessed_sex)
+    actual_norm = normalize_name(actual_sex)
+
+    return 100.0 if guess_norm == actual_norm else 0.0
+
+
+def calculate_time_score(guessed_time, actual_time) -> float:
+    """
+    Calculate score for birth time guess based on minutes difference.
+    Perfect guess = 100 points, decreases by 1 point per 10 minutes.
+
+    Args:
+        guessed_time: The guessed birth time
+        actual_time: The actual birth time
+
+    Returns:
+        Score between 0 and 100
+    """
+    if guessed_time is None or actual_time is None:
+        return 0.0
+
+    # Convert times to minutes since midnight
+    guess_minutes = guessed_time.hour * 60 + guessed_time.minute
+    actual_minutes = actual_time.hour * 60 + actual_time.minute
+
+    # Calculate minutes difference
+    minutes_diff = abs(actual_minutes - guess_minutes)
+
+    # Perfect match
+    if minutes_diff == 0:
+        return 100.0
+
+    # Decrease by 1 point per 10 minutes, minimum 0
+    score = max(0, 100 - (minutes_diff / 10))
+    return float(score)
+
+
+def calculate_weight_score(guessed_weight: float, actual_weight: float) -> float:
+    """
+    Calculate score for weight guess based on pounds difference.
+    Perfect guess = 100 points, decreases by 10 points per pound.
+
+    Args:
+        guessed_weight: The guessed weight in pounds
+        actual_weight: The actual weight in pounds
+
+    Returns:
+        Score between 0 and 100
+    """
+    if guessed_weight is None or actual_weight is None:
+        return 0.0
+
+    # Calculate pounds difference
+    pounds_diff = abs(actual_weight - guessed_weight)
+
+    # Perfect match (within 0.1 pounds)
+    if pounds_diff < 0.1:
+        return 100.0
+
+    # Decrease by 10 points per pound, minimum 0
+    score = max(0, 100 - (pounds_diff * 10))
+    return float(score)
+
+
+def calculate_custom_score(guessed_value: str, actual_value: str) -> float:
+    """
+    Calculate score for custom category using string similarity (like name scoring).
+
+    Args:
+        guessed_value: The guessed custom value
+        actual_value: The actual custom value
+
+    Returns:
+        Score between 0 and 100
+    """
+    if guessed_value is None or actual_value is None:
+        return 0.0
+
+    # Use the same algorithm as name scoring
+    return calculate_score(guessed_value, actual_value)
+
+
+def calculate_scores_for_guesses(guesses: list, pool) -> list:
+    """
+    Calculate scores for all guesses across all enabled categories.
+    Each player can have multiple guessed names - we take their best score for names.
+    Total score is the sum of all enabled category scores.
+
+    Args:
+        guesses: List of Guess objects
+        pool: Pool object with actual values and enabled categories
+
+    Returns:
+        List of guesses sorted by total score (highest first)
     """
     # Calculate score for each guess
     for guess in guesses:
-        best_score = 0.0
-        best_name = guess.guessed_names[0] if guess.guessed_names else ""
+        # Name scoring (if enabled)
+        guess.name_score = None
+        guess.best_guess = None
+        if pool.enable_name and pool.baby_name:
+            best_name_score = 0.0
+            best_name = guess.guessed_names[0] if guess.guessed_names else ""
 
-        # Try each guessed name and find the best score
-        for guessed_name in guess.guessed_names:
-            score = calculate_score(guessed_name, actual_name)
-            if score > best_score:
-                best_score = score
-                best_name = guessed_name
+            # Try each guessed name and find the best score
+            for guessed_name in guess.guessed_names:
+                score = calculate_score(guessed_name, pool.baby_name)
+                if score > best_name_score:
+                    best_name_score = score
+                    best_name = guessed_name
 
-        # Store the best score and which name achieved it
-        guess.score = best_score
-        guess.best_guess = best_name
+            # Store the best name score
+            guess.name_score = best_name_score
+            guess.best_guess = best_name
 
-    # Sort by score (descending), then by submission time (ascending) for ties
-    guesses.sort(key=lambda x: (-x.score, x.submitted_at))
+        # Calculate scores for other categories if enabled
+        guess.date_score = None
+        if pool.enable_date and pool.birth_date:
+            guess.date_score = calculate_date_score(guess.guessed_birth_date, pool.birth_date)
+
+        guess.sex_score = None
+        if pool.enable_sex and pool.sex:
+            guess.sex_score = calculate_sex_score(guess.guessed_sex, pool.sex)
+
+        guess.time_score = None
+        if pool.enable_time and pool.birth_time:
+            guess.time_score = calculate_time_score(guess.guessed_birth_time, pool.birth_time)
+
+        guess.weight_score = None
+        if pool.enable_weight and pool.weight:
+            guess.weight_score = calculate_weight_score(guess.guessed_weight, pool.weight)
+
+        guess.custom_score = None
+        if pool.enable_custom and pool.custom_value:
+            guess.custom_score = calculate_custom_score(guess.guessed_custom_value, pool.custom_value)
+
+        # Calculate total score (sum of all non-None scores)
+        total = 0.0
+        if guess.name_score is not None:
+            total += guess.name_score
+        if guess.date_score is not None:
+            total += guess.date_score
+        if guess.sex_score is not None:
+            total += guess.sex_score
+        if guess.time_score is not None:
+            total += guess.time_score
+        if guess.weight_score is not None:
+            total += guess.weight_score
+        if guess.custom_score is not None:
+            total += guess.custom_score
+
+        guess.total_score = total
+
+    # Sort by total score (descending), then by submission time (ascending) for ties
+    guesses.sort(key=lambda x: (-x.total_score, x.submitted_at))
 
     return guesses
