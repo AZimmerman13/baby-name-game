@@ -11,7 +11,9 @@ services:
     environment:
       - DATABASE_URL=sqlite:///./data/baby_name_game.db
       - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
-      - CORS_ORIGINS=https://${DOMAIN}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - COOKIE_SECURE=${COOKIE_SECURE:-True}
+      - CORS_ORIGINS=${CORS_ORIGINS}
       - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-20}
     restart: unless-stopped
     networks:
