@@ -205,6 +205,22 @@ class GuessResponse(BaseModel):
         from_attributes = True
 
 
+class GuessDetailResponse(BaseModel):
+    """Schema for admin view of guess details (before reveal)"""
+    id: int
+    player_name: str
+    guessed_names: List[str]
+    guessed_birth_date: Optional[date] = None
+    guessed_sex: Optional[str] = None
+    guessed_birth_time: Optional[time] = None
+    guessed_weight: Optional[float] = None
+    guessed_custom_value: Optional[str] = None
+    submitted_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class GuessResultResponse(BaseModel):
     """Schema for guess with score (after reveal)"""
     id: int

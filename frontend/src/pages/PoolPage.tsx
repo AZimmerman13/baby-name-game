@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { getPool, submitGuess, revealName } from '../services/api';
-import type { PoolResponse } from '../types/api';
+import { getPool, submitGuess, revealName, getPoolGuesses } from '../services/api';
+import type { PoolResponse, GuessDetailResponse } from '../types/api';
 import axios from 'axios';
 import Navigation from '../components/Navigation';
 
@@ -42,6 +42,11 @@ function PoolPage() {
   // Copy link state
   const [copiedAdmin, setCopiedAdmin] = useState<boolean>(false);
   const [copiedShare, setCopiedShare] = useState<boolean>(false);
+
+  // Admin guesses view state
+  const [guesses, setGuesses] = useState<GuessDetailResponse[]>([]);
+  const [loadingGuesses, setLoadingGuesses] = useState<boolean>(false);
+  const [showGuesses, setShowGuesses] = useState<boolean>(false);
 
   useEffect(() => {
     loadPool();
@@ -202,6 +207,32 @@ function PoolPage() {
     navigator.clipboard.writeText(link);
     setCopiedShare(true);
     setTimeout(() => setCopiedShare(false), 2000);
+  };
+
+  const loadGuesses = async () => {
+    if (!poolId || !adminTokenFromUrl) return;
+
+    setLoadingGuesses(true);
+    try {
+      const data = await getPoolGuesses(poolId, adminTokenFromUrl);
+      setGuesses(data);
+      setShowGuesses(true);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.detail || 'Failed to load guesses');
+      } else {
+        setError('Failed to load guesses');
+      }
+    } finally {
+      setLoadingGuesses(false);
+    }
+  };
+
+  const formatWeight = (pounds: number | null): string => {
+    if (!pounds) return 'N/A';
+    const lbs = Math.floor(pounds);
+    const oz = Math.round((pounds - lbs) * 16);
+    return `${lbs} lbs ${oz} oz`;
   };
 
   if (loading) {
@@ -476,6 +507,83 @@ function PoolPage() {
           <p style={{ marginBottom: '16px', color: '#718096' }}>
             When you're ready, reveal the actual results to calculate scores and show the leaderboard.
           </p>
+
+          {/* View All Guesses Button */}
+          {!showGuesses && (
+            <button
+              onClick={loadGuesses}
+              className="btn btn-secondary btn-full"
+              disabled={loadingGuesses}
+              style={{ marginBottom: '16px' }}
+            >
+              {loadingGuesses ? 'Loading...' : `View All Guesses (${pool.participant_count})`}
+            </button>
+          )}
+
+          {/* All Guesses Display */}
+          {showGuesses && guesses.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h3 style={{ margin: 0 }}>All Guesses ({guesses.length})</h3>
+                <button
+                  onClick={() => setShowGuesses(false)}
+                  className="btn btn-secondary"
+                  style={{ padding: '4px 12px', fontSize: '0.85rem' }}
+                >
+                  Hide
+                </button>
+              </div>
+              <div style={{ maxHeight: '500px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                {guesses.map((guess, index) => (
+                  <div
+                    key={guess.id}
+                    style={{
+                      padding: '16px',
+                      borderBottom: index < guesses.length - 1 ? '1px solid #e2e8f0' : 'none',
+                      backgroundColor: index % 2 === 0 ? '#f7fafc' : 'white'
+                    }}
+                  >
+                    <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '1.1rem' }}>
+                      {guess.player_name}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: '#718096', marginBottom: '8px' }}>
+                      Submitted: {new Date(guess.submitted_at).toLocaleString()}
+                    </div>
+                    {guess.guessed_names && guess.guessed_names.length > 0 && guess.guessed_names[0] && (
+                      <div style={{ marginBottom: '4px' }}>
+                        <strong>Names:</strong> {guess.guessed_names.join(', ')}
+                      </div>
+                    )}
+                    {guess.guessed_birth_date && (
+                      <div style={{ marginBottom: '4px' }}>
+                        <strong>Birth Date:</strong> {new Date(guess.guessed_birth_date).toLocaleDateString()}
+                      </div>
+                    )}
+                    {guess.guessed_sex && (
+                      <div style={{ marginBottom: '4px' }}>
+                        <strong>Sex:</strong> {guess.guessed_sex}
+                      </div>
+                    )}
+                    {guess.guessed_birth_time && (
+                      <div style={{ marginBottom: '4px' }}>
+                        <strong>Birth Time:</strong> {guess.guessed_birth_time}
+                      </div>
+                    )}
+                    {guess.guessed_weight && (
+                      <div style={{ marginBottom: '4px' }}>
+                        <strong>Weight:</strong> {formatWeight(guess.guessed_weight)}
+                      </div>
+                    )}
+                    {guess.guessed_custom_value && (
+                      <div style={{ marginBottom: '4px' }}>
+                        <strong>{pool.custom_category_name || 'Custom'}:</strong> {guess.guessed_custom_value}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {!showRevealForm ? (
             <button

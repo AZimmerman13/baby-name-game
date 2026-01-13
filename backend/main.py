@@ -311,6 +311,37 @@ def submit_guess(
     return {"message": "Guess submitted successfully", "player_name": guess_data.player_name}
 
 
+@app.get("/api/pool/{pool_id}/guesses", response_model=List[schemas.GuessDetailResponse])
+@limiter.limit(f"{settings.rate_limit_per_minute}/minute")
+def get_pool_guesses(
+    request: Request,
+    pool_id: str,
+    admin_token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all guesses for a pool (admin only).
+    Requires admin token for authorization.
+    Returns all guess details including guessed values.
+    """
+    # Check if pool exists
+    pool = db.query(models.Pool).filter(models.Pool.id == pool_id).first()
+
+    if not pool:
+        raise HTTPException(status_code=404, detail="Pool not found")
+
+    # Verify admin token
+    if pool.admin_token != admin_token:
+        raise HTTPException(status_code=403, detail="Invalid admin token")
+
+    # Fetch all guesses for this pool
+    guesses = db.query(models.Guess).filter(
+        models.Guess.pool_id == pool_id
+    ).order_by(models.Guess.submitted_at.asc()).all()
+
+    return guesses
+
+
 @app.post("/api/pool/{pool_id}/reveal", response_model=schemas.ResultsResponse)
 @limiter.limit(f"{settings.rate_limit_per_minute}/minute")
 def reveal_name(

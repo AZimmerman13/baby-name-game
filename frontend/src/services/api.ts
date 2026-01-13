@@ -11,6 +11,7 @@ import type {
   UserResponse,
   PoolLinkRequest,
   PoolUpdateRequest,
+  GuessDetailResponse,
 } from '../types/api';
 
 // Get API URL from environment variable or use default
@@ -56,6 +57,13 @@ export const revealName = async (
 
 export const getResults = async (poolId: string): Promise<ResultsResponse> => {
   const response = await api.get<ResultsResponse>(`/pool/${poolId}/results`);
+  return response.data;
+};
+
+export const getPoolGuesses = async (poolId: string, adminToken: string): Promise<GuessDetailResponse[]> => {
+  const response = await api.get<GuessDetailResponse[]>(`/pool/${poolId}/guesses`, {
+    params: { admin_token: adminToken }
+  });
   return response.data;
 };
 

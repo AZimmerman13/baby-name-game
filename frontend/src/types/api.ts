@@ -67,6 +67,18 @@ export interface GuessResponse {
   submitted_at: string;
 }
 
+export interface GuessDetailResponse {
+  id: number;
+  player_name: string;
+  guessed_names: string[];
+  guessed_birth_date: string | null;
+  guessed_sex: string | null;
+  guessed_birth_time: string | null;
+  guessed_weight: number | null;
+  guessed_custom_value: string | null;
+  submitted_at: string;
+}
+
 export interface GuessResultResponse {
   id: number;
   player_name: string;
