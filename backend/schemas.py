@@ -7,7 +7,7 @@ from models import PoolStatus
 # Pool Schemas
 class PoolCreate(BaseModel):
     """Schema for creating a new pool"""
-    creator_name: str = Field(..., min_length=1, max_length=100)
+    creator_name: str = Field(..., min_length=1, max_length=40)
 
     # Category toggles
     enable_name: bool = True
@@ -52,7 +52,7 @@ class PoolCreate(BaseModel):
 
 class PoolReveal(BaseModel):
     """Schema for revealing the baby name and other actual values"""
-    baby_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    baby_name: Optional[str] = Field(None, min_length=1, max_length=40)
     admin_token: str = Field(..., min_length=1)
 
     # Actual values for other categories (optional based on what's enabled)
@@ -60,7 +60,7 @@ class PoolReveal(BaseModel):
     sex: Optional[str] = Field(None, max_length=50)
     birth_time: Optional[time] = None
     weight: Optional[float] = Field(None, gt=0, le=50)  # in pounds, reasonable range
-    custom_value: Optional[str] = Field(None, max_length=100)
+    custom_value: Optional[str] = Field(None, max_length=40)
 
     @field_validator('baby_name')
     @classmethod
@@ -129,7 +129,7 @@ class PoolCreatedResponse(BaseModel):
 # Guess Schemas
 class GuessCreate(BaseModel):
     """Schema for creating a new guess (1-6 names plus optional other predictions)"""
-    player_name: str = Field(..., min_length=1, max_length=100)
+    player_name: str = Field(..., min_length=1, max_length=40)
     guessed_names: List[str] = Field(..., min_length=1, max_length=6)
 
     # Other predictions (optional - only filled if category enabled)
@@ -137,7 +137,7 @@ class GuessCreate(BaseModel):
     guessed_sex: Optional[str] = Field(None, max_length=50)
     guessed_birth_time: Optional[time] = None
     guessed_weight: Optional[float] = Field(None, gt=0, le=50)  # in pounds
-    guessed_custom_value: Optional[str] = Field(None, max_length=100)
+    guessed_custom_value: Optional[str] = Field(None, max_length=40)
 
     @field_validator('player_name')
     @classmethod
@@ -163,8 +163,9 @@ class GuessCreate(BaseModel):
             if not name.strip() and len(v) > 1:
                 raise ValueError('All names must be non-empty strings')
             cleaned_name = name.strip()
-            if len(cleaned_name) > 100:
-                raise ValueError('Each name must be 100 characters or less')
+            # Enforce 40 character limit
+            if len(cleaned_name) > 40:
+                raise ValueError('Each name must be 40 characters or less')
             # Only add non-empty names to the list
             if cleaned_name:
                 cleaned_names.append(cleaned_name)

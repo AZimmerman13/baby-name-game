@@ -12,6 +12,7 @@ function ResultsPage() {
   const [results, setResults] = useState<ResultsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
     loadResults();
@@ -52,6 +53,42 @@ function ResultsPage() {
     if (rank === 2) return 'silver';
     if (rank === 3) return 'bronze';
     return '';
+  };
+
+  const formatResultsForSharing = (): string => {
+    if (!results) return '';
+
+    let text = `🎉 Baby Name Pool Results 🎉\n\n`;
+    text += `The baby's name is: ${results.baby_name}\n`;
+    text += `Pool by ${results.creator_name}\n`;
+    text += `Total Participants: ${results.total_participants}\n\n`;
+
+    if (results.leaderboard.length > 0) {
+      text += `🏆 Leaderboard 🏆\n\n`;
+      results.leaderboard.forEach((entry, index) => {
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${entry.rank}`;
+        text += `${medal} ${entry.player_name} - ${entry.total_score?.toFixed(1) || '0.0'} points\n`;
+        if (entry.best_guess) {
+          text += `   Best guess: ${entry.best_guess}\n`;
+        }
+        text += '\n';
+      });
+    }
+
+    text += `\nPlay at: ${window.location.origin}`;
+
+    return text;
+  };
+
+  const copyResults = async () => {
+    const text = formatResultsForSharing();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
   };
 
   if (loading) {
@@ -127,6 +164,14 @@ function ResultsPage() {
             </div>
           )}
         </div>
+
+        <button
+          onClick={copyResults}
+          className="btn btn-secondary btn-full"
+          style={{ marginTop: '24px' }}
+        >
+          {copied ? '✓ Copied to Clipboard!' : '📋 Copy & Share Results'}
+        </button>
       </div>
 
       {results.leaderboard.length > 0 ? (

@@ -102,7 +102,7 @@ function Home() {
               onChange={(e) => setCreatorName(e.target.value)}
               placeholder="Enter your name"
               disabled={loading}
-              maxLength={100}
+              maxLength={40}
             />
           </div>
 

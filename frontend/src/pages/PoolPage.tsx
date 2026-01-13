@@ -319,7 +319,7 @@ function PoolPage() {
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Enter your name"
                 disabled={submitting}
-                maxLength={100}
+                maxLength={40}
               />
             </div>
 
@@ -337,7 +337,7 @@ function PoolPage() {
                     onChange={(e) => handleNameChange(index, e.target.value)}
                     placeholder={`Guess #${index + 1}${index === 0 ? ' (required)' : ' (optional)'}`}
                     disabled={submitting}
-                    maxLength={100}
+                    maxLength={40}
                     style={{ marginBottom: index < 5 ? '8px' : '0' }}
                   />
                 ))}
@@ -499,7 +499,7 @@ function PoolPage() {
                     onChange={(e) => setBabyName(e.target.value)}
                     placeholder="Enter the actual baby name"
                     disabled={revealing}
-                    maxLength={100}
+                    maxLength={40}
                     autoFocus
                   />
                 </div>
@@ -611,7 +611,7 @@ function PoolPage() {
                     onChange={(e) => setCustomValue(e.target.value)}
                     placeholder={`Enter actual ${pool.custom_category_name || 'custom value'}`}
                     disabled={revealing}
-                    maxLength={100}
+                    maxLength={40}
                   />
                 </div>
               )}
