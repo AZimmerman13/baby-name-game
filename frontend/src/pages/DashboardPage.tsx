@@ -154,7 +154,7 @@ function DashboardPage() {
                   </div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <Link
-                      to={`/pool/${pool.id}`}
+                      to={pool.admin_token ? `/pool/${pool.id}?admin=${pool.admin_token}` : `/pool/${pool.id}`}
                       className="btn btn-primary"
                       style={{ fontSize: '0.9rem', padding: '8px 16px' }}
                     >

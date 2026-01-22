@@ -515,7 +515,8 @@ def get_user_pools(
             enable_custom=bool(pool.enable_custom),
             due_date=pool.due_date,
             custom_category_name=pool.custom_category_name,
-            is_owner=True
+            is_owner=True,
+            admin_token=pool.admin_token
         )
         pool_responses.append(pool_response)
 

@@ -109,6 +109,9 @@ class PoolResponse(BaseModel):
     # Ownership indicator (for frontend logic)
     is_owner: bool = False
 
+    # Admin token (only returned for owned pools)
+    admin_token: Optional[str] = None
+
     class Config:
         from_attributes = True
 

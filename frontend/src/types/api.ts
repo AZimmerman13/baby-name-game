@@ -40,6 +40,7 @@ export interface PoolResponse {
   due_date: string | null;
   custom_category_name: string | null;
   is_owner: boolean;
+  admin_token?: string | null;
 }
 
 export interface PoolCreatedResponse {
