@@ -112,13 +112,14 @@ def calculate_date_score(guessed_date, actual_date) -> float:
 def calculate_sex_score(guessed_sex: str, actual_sex: str) -> float:
     """
     Calculate score for sex guess (binary - either correct or not).
+    Max 50 points to reduce penalty for wrong guess on 50/50 category.
 
     Args:
         guessed_sex: The guessed sex
         actual_sex: The actual sex
 
     Returns:
-        100 for correct, 0 for incorrect
+        50 for correct, 0 for incorrect
     """
     if guessed_sex is None or actual_sex is None:
         return 0.0
@@ -126,7 +127,7 @@ def calculate_sex_score(guessed_sex: str, actual_sex: str) -> float:
     guess_norm = normalize_name(guessed_sex)
     actual_norm = normalize_name(actual_sex)
 
-    return 100.0 if guess_norm == actual_norm else 0.0
+    return 50.0 if guess_norm == actual_norm else 0.0
 
 
 def calculate_time_score(guessed_time, actual_time) -> float:
