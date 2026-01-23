@@ -14,6 +14,7 @@ function Home() {
   const [enableCustom, setEnableCustom] = useState<boolean>(false);
   const [dueDate, setDueDate] = useState<string>('');
   const [customCategoryName, setCustomCategoryName] = useState<string>('');
+  const [note, setNote] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
@@ -56,6 +57,7 @@ function Home() {
         enable_custom: enableCustom,
         due_date: enableDate && dueDate ? dueDate : null,
         custom_category_name: enableCustom && customCategoryName ? customCategoryName.trim() : null,
+        note: note.trim() || null,
       });
       // Store admin token in localStorage
       localStorage.setItem(`admin_token_${data.id}`, data.admin_token);
@@ -245,6 +247,23 @@ function Home() {
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="note" className="form-label">
+              Note for Participants (Optional)
+            </label>
+            <textarea
+              id="note"
+              className="form-input"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add any helpful info for participants (e.g., 'Baby is due in March!' or 'First name only please')"
+              disabled={loading}
+              maxLength={500}
+              rows={3}
+              style={{ resize: 'vertical' }}
+            />
           </div>
 
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>

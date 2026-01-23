@@ -12,6 +12,9 @@ import type {
   PoolLinkRequest,
   PoolUpdateRequest,
   GuessDetailResponse,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  VerifyResetTokenRequest,
 } from '../types/api';
 
 // Get API URL from environment variable or use default
@@ -67,6 +70,12 @@ export const getPoolGuesses = async (poolId: string, adminToken: string): Promis
   return response.data;
 };
 
+export const deleteGuess = async (poolId: string, guessId: number, adminToken: string): Promise<void> => {
+  await api.delete(`/pool/${poolId}/guesses/${guessId}`, {
+    params: { admin_token: adminToken }
+  });
+};
+
 // Authentication APIs
 export const register = async (userData: UserRegister): Promise<UserResponse> => {
   const response = await api.post<UserResponse>('/auth/register', userData);
@@ -92,6 +101,22 @@ export const getCurrentUser = async (): Promise<UserResponse | null> => {
     }
     throw error;
   }
+};
+
+// Password Reset APIs
+export const forgotPassword = async (data: ForgotPasswordRequest): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>('/auth/forgot-password', data);
+  return response.data;
+};
+
+export const verifyResetToken = async (data: VerifyResetTokenRequest): Promise<{ valid: boolean }> => {
+  const response = await api.post<{ valid: boolean }>('/auth/verify-reset-token', data);
+  return response.data;
+};
+
+export const resetPassword = async (data: ResetPasswordRequest): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>('/auth/reset-password', data);
+  return response.data;
 };
 
 // User Pool Management APIs

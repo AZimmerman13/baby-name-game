@@ -13,6 +13,7 @@ export interface PoolCreate {
   enable_custom?: boolean;
   due_date?: string | null;  // Date in ISO format (YYYY-MM-DD)
   custom_category_name?: string | null;
+  note?: string | null;
 }
 
 export interface PoolReveal {
@@ -39,6 +40,7 @@ export interface PoolResponse {
   enable_custom: boolean;
   due_date: string | null;
   custom_category_name: string | null;
+  note: string | null;
   is_owner: boolean;
   admin_token?: string | null;
 }
@@ -143,4 +145,18 @@ export interface PoolUpdateRequest {
   creator_name?: string;
   due_date?: string | null;
   custom_category_name?: string | null;
+}
+
+// Password Reset Types
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  new_password: string;
+}
+
+export interface VerifyResetTokenRequest {
+  token: string;
 }

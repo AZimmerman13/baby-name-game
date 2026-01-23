@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from config import settings
@@ -27,6 +27,42 @@ def get_db():
         db.close()
 
 
+def run_migrations():
+    """
+    Run schema migrations for existing tables.
+
+    SQLAlchemy's create_all() only creates new tables - it won't add columns
+    to existing tables. This function handles adding new columns.
+
+    To add a new column:
+    1. Add the column to your model in models.py
+    2. Add an entry here: ("table_name", "column_name", "SQLITE_TYPE")
+       - Common types: TEXT, INTEGER, REAL, BLOB, DATETIME
+    3. Restart the server - the column will be added automatically
+
+    For new tables, just add them to models.py - create_all() handles those.
+    """
+    migrations = [
+        # (table_name, column_name, column_type)
+        ("pools", "note", "TEXT"),
+    ]
+
+    with engine.connect() as conn:
+        for table_name, column_name, column_type in migrations:
+            if column_name is None:
+                continue  # Skip - this is just a marker for new tables
+
+            # Check if column exists
+            result = conn.execute(text(f"PRAGMA table_info({table_name})"))
+            columns = [row[1] for row in result.fetchall()]
+
+            if column_name not in columns:
+                print(f"Adding column {column_name} to {table_name}")
+                conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"))
+                conn.commit()
+
+
 def init_db():
-    """Initialize database - create all tables"""
+    """Initialize database - create all tables and run migrations"""
     Base.metadata.create_all(bind=engine)
+    run_migrations()

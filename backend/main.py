@@ -5,8 +5,10 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import uvicorn
+import secrets
+import hashlib
 
 from database import get_db, init_db
 from config import settings
@@ -22,6 +24,7 @@ from auth import (
     set_auth_cookie,
     clear_auth_cookie
 )
+from email_service import send_password_reset_email
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -171,6 +174,131 @@ def get_current_user_info(
     return current_user
 
 
+# ==================== PASSWORD RESET ENDPOINTS ====================
+
+@app.post("/api/auth/forgot-password")
+@limiter.limit("3/hour")
+def forgot_password(
+    request: Request,
+    forgot_data: schemas.ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Request a password reset email.
+    Always returns success to prevent email enumeration.
+    Rate limited to 3 requests per hour.
+    """
+    # Find user by email
+    user = db.query(models.User).filter(
+        models.User.email == forgot_data.email.lower()
+    ).first()
+
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"message": "If an account with that email exists, a password reset link has been sent."}
+
+    # Generate a secure random token
+    token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+    # Create password reset token (expires in 1 hour)
+    reset_token = models.PasswordResetToken(
+        user_id=user.id,
+        token_hash=token_hash,
+        expires_at=datetime.utcnow() + timedelta(hours=1)
+    )
+    db.add(reset_token)
+    db.commit()
+
+    # Build reset URL
+    reset_url = f"{settings.frontend_url}/reset-password?token={token}"
+
+    # Send email
+    send_password_reset_email(
+        to_email=user.email,
+        reset_url=reset_url,
+        display_name=user.display_name
+    )
+
+    return {"message": "If an account with that email exists, a password reset link has been sent."}
+
+
+@app.post("/api/auth/verify-reset-token")
+@limiter.limit(f"{settings.rate_limit_per_minute}/minute")
+def verify_reset_token(
+    request: Request,
+    verify_data: schemas.VerifyResetTokenRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Verify a password reset token is valid and not expired.
+    """
+    token_hash = hashlib.sha256(verify_data.token.encode()).hexdigest()
+
+    # Find the token
+    reset_token = db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.token_hash == token_hash,
+        models.PasswordResetToken.used_at.is_(None),
+        models.PasswordResetToken.expires_at > datetime.utcnow()
+    ).first()
+
+    if not reset_token:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired reset token"
+        )
+
+    return {"valid": True}
+
+
+@app.post("/api/auth/reset-password")
+@limiter.limit("5/hour")
+def reset_password(
+    request: Request,
+    reset_data: schemas.ResetPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Reset password using a valid token.
+    Token is marked as used after successful reset.
+    """
+    token_hash = hashlib.sha256(reset_data.token.encode()).hexdigest()
+
+    # Find the token
+    reset_token = db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.token_hash == token_hash,
+        models.PasswordResetToken.used_at.is_(None),
+        models.PasswordResetToken.expires_at > datetime.utcnow()
+    ).first()
+
+    if not reset_token:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired reset token"
+        )
+
+    # Get the user
+    user = db.query(models.User).filter(
+        models.User.id == reset_token.user_id
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail="User not found"
+        )
+
+    # Update password
+    user.hashed_password = hash_password(reset_data.new_password)
+
+    # Mark token as used
+    reset_token.used_at = datetime.utcnow()
+
+    db.commit()
+
+    return {"message": "Password has been reset successfully"}
+
+
 # ==================== POOL ENDPOINTS ====================
 
 @app.post("/api/pool", response_model=schemas.PoolCreatedResponse, status_code=201)
@@ -198,7 +326,8 @@ def create_pool(
         enable_weight=1 if pool_data.enable_weight else 0,
         enable_custom=1 if pool_data.enable_custom else 0,
         due_date=pool_data.due_date,
-        custom_category_name=pool_data.custom_category_name
+        custom_category_name=pool_data.custom_category_name,
+        note=pool_data.note
     )
     db.add(new_pool)
     db.commit()
@@ -255,6 +384,7 @@ def get_pool(
         enable_custom=bool(pool.enable_custom),
         due_date=pool.due_date,
         custom_category_name=pool.custom_category_name,
+        note=pool.note,
         is_owner=is_owner
     )
 
@@ -340,6 +470,49 @@ def get_pool_guesses(
     ).order_by(models.Guess.submitted_at.asc()).all()
 
     return guesses
+
+
+@app.delete("/api/pool/{pool_id}/guesses/{guess_id}")
+@limiter.limit(f"{settings.rate_limit_per_minute}/minute")
+def delete_guess(
+    request: Request,
+    pool_id: str,
+    guess_id: int,
+    admin_token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a guess from a pool (admin only).
+    Requires admin token for authorization.
+    """
+    # Check if pool exists
+    pool = db.query(models.Pool).filter(models.Pool.id == pool_id).first()
+
+    if not pool:
+        raise HTTPException(status_code=404, detail="Pool not found")
+
+    # Verify admin token
+    if pool.admin_token != admin_token:
+        raise HTTPException(status_code=403, detail="Invalid admin token")
+
+    # Check if pool is still open
+    if pool.status != models.PoolStatus.OPEN:
+        raise HTTPException(status_code=400, detail="Cannot delete guesses from a revealed pool")
+
+    # Find the guess
+    guess = db.query(models.Guess).filter(
+        models.Guess.id == guess_id,
+        models.Guess.pool_id == pool_id
+    ).first()
+
+    if not guess:
+        raise HTTPException(status_code=404, detail="Guess not found")
+
+    # Delete the guess
+    db.delete(guess)
+    db.commit()
+
+    return {"message": "Guess deleted successfully"}
 
 
 @app.post("/api/pool/{pool_id}/reveal", response_model=schemas.ResultsResponse)
@@ -515,6 +688,7 @@ def get_user_pools(
             enable_custom=bool(pool.enable_custom),
             due_date=pool.due_date,
             custom_category_name=pool.custom_category_name,
+            note=pool.note,
             is_owner=True,
             admin_token=pool.admin_token
         )
@@ -577,6 +751,7 @@ def link_pool_to_account(
         enable_custom=bool(pool.enable_custom),
         due_date=pool.due_date,
         custom_category_name=pool.custom_category_name,
+        note=pool.note,
         is_owner=True
     )
 
@@ -645,6 +820,7 @@ def update_pool(
         enable_custom=bool(pool.enable_custom),
         due_date=pool.due_date,
         custom_category_name=pool.custom_category_name,
+        note=pool.note,
         is_owner=True
     )
 

@@ -52,6 +52,7 @@ class Pool(Base):
     # Pool configuration (visible to participants)
     due_date = Column(Date, nullable=True)  # Expected due date (shown if enable_date=1)
     custom_category_name = Column(String, nullable=True)  # e.g., "Hair Color" (used if enable_custom=1)
+    note = Column(String, nullable=True)  # Optional note from creator to participants
 
     # Actual values (null until revealed)
     baby_name = Column(String, nullable=True)
@@ -108,3 +109,21 @@ class Guess(Base):
 
     def __repr__(self):
         return f"<Guess(player={self.player_name}, total_score={self.total_score})>"
+
+
+class PasswordResetToken(Base):
+    """Password reset token for email-based password recovery"""
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    token_hash = Column(String, nullable=False, unique=True)  # SHA-256 hash of token
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)  # Set when token is used (one-time use)
+
+    # Relationship
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<PasswordResetToken(user_id={self.user_id}, expires_at={self.expires_at})>"

@@ -20,6 +20,7 @@ class PoolCreate(BaseModel):
     # Pool configuration
     due_date: Optional[date] = None
     custom_category_name: Optional[str] = Field(None, max_length=100)
+    note: Optional[str] = Field(None, max_length=500)
 
     @field_validator('creator_name')
     @classmethod
@@ -105,6 +106,7 @@ class PoolResponse(BaseModel):
     # Pool configuration (visible to participants)
     due_date: Optional[date] = None
     custom_category_name: Optional[str] = None
+    note: Optional[str] = None
 
     # Ownership indicator (for frontend logic)
     is_owner: bool = False
@@ -346,3 +348,35 @@ class PoolUpdateRequest(BaseModel):
         if v and not v.strip():
             raise ValueError('Custom category name cannot be empty')
         return v.strip() if v else None
+
+
+# Password Reset Schemas
+class ForgotPasswordRequest(BaseModel):
+    """Schema for requesting a password reset"""
+    email: str = Field(..., min_length=3, max_length=255)
+
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        v = v.strip().lower()
+        if '@' not in v or '.' not in v.split('@')[1]:
+            raise ValueError('Invalid email format')
+        return v
+
+
+class ResetPasswordRequest(BaseModel):
+    """Schema for resetting password with token"""
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        return v
+
+
+class VerifyResetTokenRequest(BaseModel):
+    """Schema for verifying a reset token"""
+    token: str = Field(..., min_length=1)

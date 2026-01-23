@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # Rate Limiting
     rate_limit_per_minute: int = 20
 
+    # Email (Resend)
+    resend_api_key: str = ""
+    frontend_url: str = "http://localhost:3000"
+
     @property
     def cors_origins_list(self) -> List[str]:
         """Parse CORS origins from comma-separated string"""

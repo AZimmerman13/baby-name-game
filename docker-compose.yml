@@ -6,6 +6,9 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: baby-name-backend
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     volumes:
       - backend-data:/app/data
     environment:
@@ -15,6 +18,8 @@ services:
       - COOKIE_SECURE=${COOKIE_SECURE:-True}
       - CORS_ORIGINS=${CORS_ORIGINS}
       - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-20}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
     restart: unless-stopped
     networks:
       - baby-name-network

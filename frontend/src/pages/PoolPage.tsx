@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { getPool, submitGuess, revealName, getPoolGuesses } from '../services/api';
+import { getPool, submitGuess, revealName, getPoolGuesses, deleteGuess } from '../services/api';
 import type { PoolResponse, GuessDetailResponse } from '../types/api';
 import axios from 'axios';
 import Navigation from '../components/Navigation';
@@ -47,6 +47,10 @@ function PoolPage() {
   const [guesses, setGuesses] = useState<GuessDetailResponse[]>([]);
   const [loadingGuesses, setLoadingGuesses] = useState<boolean>(false);
   const [showGuesses, setShowGuesses] = useState<boolean>(false);
+  const [deletingGuessId, setDeletingGuessId] = useState<number | null>(null);
+
+  // Confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
   useEffect(() => {
     loadPool();
@@ -75,7 +79,7 @@ function PoolPage() {
     }
   };
 
-  const handleSubmitGuess = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitGuess = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -94,9 +98,18 @@ function PoolPage() {
       return;
     }
 
+    // Show confirmation modal instead of submitting directly
+    setShowConfirmModal(true);
+  };
+
+  const confirmSubmitGuess = async () => {
     if (!poolId) return;
 
+    setShowConfirmModal(false);
     setSubmitting(true);
+
+    // Filter out empty guesses
+    const validNames = guessedNames.filter(name => name.trim() !== '');
 
     // Convert lbs + oz to total pounds
     let totalWeight: number | null = null;
@@ -228,6 +241,26 @@ function PoolPage() {
     }
   };
 
+  const handleDeleteGuess = async (guessId: number) => {
+    if (!poolId || !adminTokenFromUrl) return;
+    if (!window.confirm('Are you sure you want to delete this submission?')) return;
+
+    setDeletingGuessId(guessId);
+    try {
+      await deleteGuess(poolId, guessId, adminTokenFromUrl);
+      setGuesses(guesses.filter(g => g.id !== guessId));
+      loadPool(); // Update participant count
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.detail || 'Failed to delete guess');
+      } else {
+        setError('Failed to delete guess');
+      }
+    } finally {
+      setDeletingGuessId(null);
+    }
+  };
+
   const formatWeight = (pounds: number | null): string => {
     if (!pounds) return 'N/A';
     const lbs = Math.floor(pounds);
@@ -285,6 +318,14 @@ function PoolPage() {
             <div className="stat-label">Status</div>
           </div>
         </div>
+
+        {pool.note && (
+          <div className="info-box" style={{ marginTop: '16px', marginBottom: '16px' }}>
+            <p style={{ margin: 0 }}>
+              <strong>Note from {pool.creator_name}:</strong> {pool.note}
+            </p>
+          </div>
+        )}
 
         {isAdmin && (
           <>
@@ -442,7 +483,7 @@ function PoolPage() {
                       className="form-input"
                       value={guessedWeightLbs}
                       onChange={(e) => setGuessedWeightLbs(e.target.value)}
-                      placeholder="7"
+                      placeholder=""
                       disabled={submitting}
                       min="0"
                       max="20"
@@ -458,7 +499,7 @@ function PoolPage() {
                       className="form-input"
                       value={guessedWeightOz}
                       onChange={(e) => setGuessedWeightOz(e.target.value)}
-                      placeholder="8"
+                      placeholder=""
                       disabled={submitting}
                       min="0"
                       max="15"
@@ -543,8 +584,26 @@ function PoolPage() {
                       backgroundColor: index % 2 === 0 ? '#f7fafc' : 'white'
                     }}
                   >
-                    <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '1.1rem' }}>
-                      {guess.player_name}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                        {guess.player_name}
+                      </div>
+                      <button
+                        onClick={() => handleDeleteGuess(guess.id)}
+                        disabled={deletingGuessId === guess.id}
+                        style={{
+                          background: '#e53e3e',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          fontSize: '0.75rem',
+                          cursor: deletingGuessId === guess.id ? 'not-allowed' : 'pointer',
+                          opacity: deletingGuessId === guess.id ? 0.6 : 1
+                        }}
+                      >
+                        {deletingGuessId === guess.id ? 'Deleting...' : 'Delete'}
+                      </button>
                     </div>
                     <div style={{ fontSize: '0.85rem', color: '#718096', marginBottom: '8px' }}>
                       Submitted: {new Date(guess.submitted_at).toLocaleString()}
@@ -680,7 +739,7 @@ function PoolPage() {
                         className="form-input"
                         value={weightLbs}
                         onChange={(e) => setWeightLbs(e.target.value)}
-                        placeholder="7"
+                        placeholder=""
                         disabled={revealing}
                         min="0"
                         max="20"
@@ -696,7 +755,7 @@ function PoolPage() {
                         className="form-input"
                         value={weightOz}
                         onChange={(e) => setWeightOz(e.target.value)}
-                        placeholder="8"
+                        placeholder=""
                         disabled={revealing}
                         min="0"
                         max="15"
@@ -742,6 +801,105 @@ function PoolPage() {
         </div>
       )}
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}>
+            <h2 style={{ marginBottom: '16px', textAlign: 'center' }}>Confirm Your Submission</h2>
+            <p style={{ marginBottom: '16px', color: '#718096', textAlign: 'center' }}>
+              Please review your guesses before submitting:
+            </p>
+
+            <div style={{ backgroundColor: '#f7fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <strong>Your Name:</strong> {playerName}
+              </div>
+
+              {pool?.enable_name && (
+                <div style={{ marginBottom: '12px' }}>
+                  <strong>Name Guesses:</strong>{' '}
+                  {guessedNames.filter(n => n.trim()).join(', ') || <span style={{ color: '#e53e3e' }}>None entered</span>}
+                </div>
+              )}
+
+              {pool?.enable_date && (
+                <div style={{ marginBottom: '12px' }}>
+                  <strong>Birth Date:</strong>{' '}
+                  {guessedBirthDate ? new Date(guessedBirthDate).toLocaleDateString() : <span style={{ color: '#e53e3e' }}>Not entered</span>}
+                </div>
+              )}
+
+              {pool?.enable_sex && (
+                <div style={{ marginBottom: '12px' }}>
+                  <strong>Sex:</strong>{' '}
+                  {guessedSex || <span style={{ color: '#e53e3e' }}>Not entered</span>}
+                </div>
+              )}
+
+              {pool?.enable_time && (
+                <div style={{ marginBottom: '12px' }}>
+                  <strong>Birth Time:</strong>{' '}
+                  {guessedBirthTime || <span style={{ color: '#e53e3e' }}>Not entered</span>}
+                </div>
+              )}
+
+              {pool?.enable_weight && (
+                <div style={{ marginBottom: '12px' }}>
+                  <strong>Weight:</strong>{' '}
+                  {guessedWeightLbs || guessedWeightOz
+                    ? `${guessedWeightLbs || 0} lbs ${guessedWeightOz || 0} oz`
+                    : <span style={{ color: '#e53e3e' }}>Not entered</span>}
+                </div>
+              )}
+
+              {pool?.enable_custom && (
+                <div style={{ marginBottom: '12px' }}>
+                  <strong>{pool.custom_category_name || 'Custom'}:</strong>{' '}
+                  {guessedCustomValue || <span style={{ color: '#e53e3e' }}>Not entered</span>}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={confirmSubmitGuess}
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+              >
+                Submit
+              </button>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+              >
+                Go Back & Edit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

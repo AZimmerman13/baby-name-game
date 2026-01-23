@@ -82,6 +82,11 @@ function LoginPage() {
               disabled={loading}
               autoComplete="current-password"
             />
+            <div style={{ textAlign: 'right', marginTop: '8px' }}>
+              <Link to="/forgot-password" style={{ color: '#667eea', fontSize: '14px', textDecoration: 'underline' }}>
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
