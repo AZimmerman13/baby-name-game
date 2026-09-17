@@ -4,6 +4,7 @@ import { getResults } from '../services/api';
 import type { ResultsResponse } from '../types/api';
 import axios from 'axios';
 import Navigation from '../components/Navigation';
+import { track, trackCreateCta } from '../services/analytics';
 
 function ResultsPage() {
   const { poolId } = useParams<{ poolId: string }>();
@@ -76,15 +77,30 @@ function ResultsPage() {
       });
     }
 
-    text += `\nPlay at: ${window.location.origin}`;
+    text += `\nSee the full results: ${window.location.origin}/results/${poolId}\n`;
+    text += `Start your own baby pool free: ${window.location.origin}`;
 
     return text;
   };
 
   const copyResults = async () => {
     const text = formatResultsForSharing();
+
+    // Native share sheet on mobile (Messages, WhatsApp, Instagram, etc.)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `The baby's name is ${results?.baby_name}!`, text });
+        track('Results Shared', { method: 'native' });
+        return;
+      } catch (err) {
+        // User cancelled the share sheet — don't fall through to clipboard
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+      }
+    }
+
     try {
       await navigator.clipboard.writeText(text);
+      track('Results Shared', { method: 'clipboard' });
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -219,6 +235,23 @@ function ResultsPage() {
           style={{ marginTop: '24px' }}
         >
           {copied ? '✓ Copied to Clipboard!' : '📋 Copy & Share Results'}
+        </button>
+      </div>
+
+      {/* Invite viewers to start their own pool */}
+      <div className="card" style={{ textAlign: 'center' }}>
+        <h2 style={{ marginBottom: '8px' }}>🎉 That was fun, right?</h2>
+        <p style={{ marginBottom: '16px', color: '#718096' }}>
+          Have a baby on the way or a shower to plan? Run your own pool for free.
+        </p>
+        <button
+          onClick={() => {
+            trackCreateCta('results_top');
+            navigate('/');
+          }}
+          className="btn btn-primary btn-full"
+        >
+          Start My Own Pool
         </button>
       </div>
 
@@ -558,7 +591,13 @@ function ResultsPage() {
       )}
 
       <div className="card">
-        <button onClick={() => navigate('/')} className="btn btn-primary btn-full">
+        <button
+          onClick={() => {
+            trackCreateCta('results_bottom');
+            navigate('/');
+          }}
+          className="btn btn-primary btn-full"
+        >
           Create New Pool
         </button>
       </div>

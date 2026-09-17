@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /pool/
+Disallow: /results/
+Disallow: /dashboard
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /api/
+
+Sitemap: https://storkpool.com/sitemap.xml

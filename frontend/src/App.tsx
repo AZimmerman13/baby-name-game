@@ -9,12 +9,14 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import FAQsPage from './pages/FAQsPage';
+import { PageviewTracker } from './services/analytics';
 import './App.css';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
+        <PageviewTracker />
         <div className="app">
           <Routes>
             <Route path="/" element={<Home />} />

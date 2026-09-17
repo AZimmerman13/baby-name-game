@@ -4,6 +4,7 @@ import { getPool, submitGuess, revealName, getPoolGuesses, deleteGuess } from '.
 import type { PoolResponse, GuessDetailResponse } from '../types/api';
 import axios from 'axios';
 import Navigation from '../components/Navigation';
+import { track, trackCreateCta } from '../services/analytics';
 
 function PoolPage() {
   const { poolId } = useParams<{ poolId: string }>();
@@ -129,6 +130,7 @@ function PoolPage() {
         guessed_weight: totalWeight,
         guessed_custom_value: guessedCustomValue || null,
       });
+      track('Guess Submitted', { guesses: validNames.length });
       setSuccess(`Guess${validNames.length > 1 ? 'es' : ''} submitted successfully! Thanks for playing!`);
       setPlayerName('');
       setGuessedNames(['', '', '', '', '', '']);
@@ -195,6 +197,7 @@ function PoolPage() {
         weight: totalWeight,
         custom_value: customValue || null,
       });
+      track('Pool Revealed', { participants: pool.participant_count });
       // Redirect to results page
       navigate(`/results/${poolId}`);
     } catch (err) {
@@ -218,6 +221,7 @@ function PoolPage() {
   const copyShareLink = () => {
     const link = `${window.location.origin}/pool/${poolId}`;
     navigator.clipboard.writeText(link);
+    track('Share Link Copied');
     setCopiedShare(true);
     setTimeout(() => setCopiedShare(false), 2000);
   };
@@ -304,6 +308,25 @@ function PoolPage() {
 
       {error && <div className="card"><div className="error-message">{error}</div></div>}
       {success && <div className="card"><div className="success-message">{success}</div></div>}
+
+      {/* After guessing: invite participant to start their own pool */}
+      {success && !isAdmin && (
+        <div className="card" style={{ textAlign: 'center' }}>
+          <h2 style={{ marginBottom: '8px' }}>🍼 Expecting, or planning a shower?</h2>
+          <p style={{ marginBottom: '16px', color: '#718096' }}>
+            Start your own free pool in 30 seconds. No sign-up required.
+          </p>
+          <button
+            onClick={() => {
+              trackCreateCta('pool_after_guess');
+              navigate('/');
+            }}
+            className="btn btn-primary btn-full"
+          >
+            Create My Own Pool
+          </button>
+        </div>
+      )}
 
       {/* Pool Info */}
       <div className="card">

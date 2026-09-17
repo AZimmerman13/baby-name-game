@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPool } from '../services/api';
 import axios from 'axios';
 import Navigation from '../components/Navigation';
+import { track, consumeCreateSource } from '../services/analytics';
 
 function Home() {
   const [creatorName, setCreatorName] = useState<string>('');
@@ -58,6 +59,10 @@ function Home() {
         due_date: enableDate && dueDate ? dueDate : null,
         custom_category_name: enableCustom && customCategoryName ? customCategoryName.trim() : null,
         note: note.trim() || null,
+      });
+      track('Pool Created', {
+        source: consumeCreateSource(),
+        categories: [enableName, enableDate, enableSex, enableTime, enableWeight, enableCustom].filter(Boolean).length,
       });
       // Store admin token in localStorage
       localStorage.setItem(`admin_token_${data.id}`, data.admin_token);
