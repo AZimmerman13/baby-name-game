@@ -2,7 +2,6 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from typing import List, Optional
 from datetime import datetime, timedelta
@@ -27,8 +26,9 @@ from auth import (
 from email_service import send_password_reset_email
 import analytics
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Initialize rate limiter, keyed by the real client IP (nginx sets X-Real-IP;
+# request.client.host would be the nginx container for every visitor)
+limiter = Limiter(key_func=analytics.client_ip)
 
 # Create FastAPI app
 app = FastAPI(
@@ -861,7 +861,7 @@ def delete_pool(
 # ==================== ANALYTICS ENDPOINTS ====================
 
 @app.post("/api/events", status_code=204)
-@limiter.limit("120/minute", key_func=analytics.client_ip)
+@limiter.limit("120/minute")
 def record_event(
     request: Request,
     event: schemas.EventCreate,
@@ -876,7 +876,7 @@ def record_event(
 
 
 @app.get("/api/admin/stats")
-@limiter.limit("30/minute", key_func=analytics.client_ip)
+@limiter.limit("30/minute")
 def get_admin_stats(
     request: Request,
     days: int = 30,
