@@ -9,6 +9,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import FAQsPage from './pages/FAQsPage';
+import StatsPage from './pages/StatsPage';
 import { PageviewTracker } from './services/analytics';
 import './App.css';
 
@@ -26,6 +27,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/faqs" element={<FAQsPage />} />
+            <Route path="/admin/stats" element={<StatsPage />} />
             <Route path="/pool/:poolId" element={<PoolPage />} />
             <Route path="/results/:poolId" element={<ResultsPage />} />
           </Routes>

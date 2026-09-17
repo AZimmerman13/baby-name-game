@@ -15,6 +15,7 @@ import type {
   ForgotPasswordRequest,
   ResetPasswordRequest,
   VerifyResetTokenRequest,
+  StatsResponse,
 } from '../types/api';
 
 // Get API URL from environment variable or use default
@@ -146,3 +147,12 @@ export const deletePool = async (poolId: string): Promise<void> => {
 };
 
 export default api;
+
+// Admin analytics
+export const getAdminStats = async (adminKey: string, days: number): Promise<StatsResponse> => {
+  const response = await api.get<StatsResponse>('/admin/stats', {
+    params: { days },
+    headers: { 'X-Admin-Key': adminKey },
+  });
+  return response.data;
+};

@@ -127,3 +127,20 @@ class PasswordResetToken(Base):
 
     def __repr__(self):
         return f"<PasswordResetToken(user_id={self.user_id}, expires_at={self.expires_at})>"
+
+
+class Event(Base):
+    """First-party analytics event (pageviews and product events). No IPs or PII stored."""
+    __tablename__ = "events"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False, index=True)  # e.g. "pageview", "Pool Created"
+    path = Column(String, nullable=True)  # Redacted path, e.g. "/pool/:id"
+    source = Column(String, nullable=True, index=True)  # Traffic source for the visit, e.g. "pinterest"
+    device = Column(String, nullable=True)  # "mobile" or "desktop"
+    props = Column(JSON, nullable=True)  # Small dict of event properties
+    visitor_hash = Column(String, nullable=False, index=True)  # Daily-rotating anonymous ID
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    def __repr__(self):
+        return f"<Event(name={self.name}, path={self.path}, created_at={self.created_at})>"

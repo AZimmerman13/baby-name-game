@@ -380,3 +380,32 @@ class ResetPasswordRequest(BaseModel):
 class VerifyResetTokenRequest(BaseModel):
     """Schema for verifying a reset token"""
     token: str = Field(..., min_length=1)
+
+
+# Analytics Schemas
+class EventCreate(BaseModel):
+    """Schema for an analytics event sent by the frontend"""
+    name: str = Field(..., min_length=1, max_length=64)
+    path: Optional[str] = Field(None, max_length=512)
+    referrer: Optional[str] = Field(None, max_length=1024)
+    utm_source: Optional[str] = Field(None, max_length=64)
+    props: Optional[dict] = None
+
+    @field_validator('props')
+    @classmethod
+    def validate_props(cls, v):
+        if v is None:
+            return None
+        if len(v) > 10:
+            raise ValueError('Too many props')
+        clean = {}
+        for key, value in v.items():
+            if not isinstance(key, str) or len(key) > 32:
+                raise ValueError('Invalid prop key')
+            if isinstance(value, bool) or isinstance(value, (int, float)):
+                clean[key] = value
+            elif isinstance(value, str):
+                clean[key] = value[:64]
+            else:
+                raise ValueError('Prop values must be strings, numbers, or booleans')
+        return clean

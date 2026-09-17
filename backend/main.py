@@ -25,6 +25,7 @@ from auth import (
     clear_auth_cookie
 )
 from email_service import send_password_reset_email
+import analytics
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -855,6 +856,39 @@ def delete_pool(
     db.commit()
 
     return {"message": "Pool deleted successfully"}
+
+
+# ==================== ANALYTICS ENDPOINTS ====================
+
+@app.post("/api/events", status_code=204)
+@limiter.limit("120/minute", key_func=analytics.client_ip)
+def record_event(
+    request: Request,
+    event: schemas.EventCreate,
+    db: Session = Depends(get_db)
+):
+    """Record a first-party analytics event. Bots and unknown event names are silently dropped."""
+    new_event = analytics.build_event(event, request)
+    if new_event:
+        db.add(new_event)
+        db.commit()
+    return Response(status_code=204)
+
+
+@app.get("/api/admin/stats")
+@limiter.limit("30/minute", key_func=analytics.client_ip)
+def get_admin_stats(
+    request: Request,
+    days: int = 30,
+    db: Session = Depends(get_db)
+):
+    """Analytics dashboard data. Requires the X-Admin-Key header to match ADMIN_SECRET_KEY."""
+    if settings.admin_secret_key in ("", "change-this-in-production"):
+        raise HTTPException(status_code=503, detail="ADMIN_SECRET_KEY is not configured")
+    provided = request.headers.get("x-admin-key", "")
+    if not secrets.compare_digest(provided.encode(), settings.admin_secret_key.encode()):
+        raise HTTPException(status_code=401, detail="Invalid admin key")
+    return analytics.get_stats(db, max(1, min(days, 365)))
 
 
 if __name__ == "__main__":

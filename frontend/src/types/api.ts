@@ -160,3 +160,28 @@ export interface ResetPasswordRequest {
 export interface VerifyResetTokenRequest {
   token: string;
 }
+
+// Analytics types
+export interface StatsDay {
+  date: string;
+  visitors: number;
+  pools: number;
+  guesses: number;
+}
+
+export interface StatsResponse {
+  days: number;
+  visitors: number;
+  pageviews: number;
+  events: Record<string, number>;
+  pools_created: number;
+  guesses_submitted: number;
+  pools_revealed: number;
+  viral_rate: number | null;
+  daily: StatsDay[];
+  sources: Array<{ source: string; visitors: number; pools_created: number }>;
+  creation_sources: Array<{ source: string; count: number }>;
+  cta_clicks: Array<{ source: string; count: number }>;
+  top_pages: Array<{ path: string; views: number }>;
+  devices: Record<string, number>;
+}
