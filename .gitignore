@@ -248,3 +248,7 @@ local/
 
 # Claude Code configuration
 .claude/
+
+# Local database backups (contain user emails and password hashes)
+*.tgz
+*.db
