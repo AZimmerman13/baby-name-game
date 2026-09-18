@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1500" viewBox="-250 0 1500 1500" font-family="Helvetica, Arial, sans-serif">
+  <rect x="-250" y="0" width="1500" height="1500" fill="#ffffff"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6aa8ea"/><stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect width="1000" height="1500" fill="url(#bg)"/>
+  
+  <text x="500" y="220" text-anchor="middle" font-size="92" font-weight="700" fill="#ffffff">Guess the</text>
+  <text x="500" y="326" text-anchor="middle" font-size="92" font-weight="700" fill="#ffffff">due date</text>
+  <text x="500" y="470" text-anchor="middle" font-size="36" fill="#ffffff" opacity="0.92">Only 4% of babies arrive on time</text>
+  <rect x="150" y="560" width="700" height="620" rx="22" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="500" y="640" text-anchor="middle" font-size="30" fill="#718096">Due March 14</text>
+  <g>
+    <rect x="210" y="880" width="60" height="40" rx="8" fill="#c3cbf5"/>
+    <rect x="300" y="830" width="60" height="90" rx="8" fill="#c3cbf5"/>
+    <rect x="390" y="770" width="60" height="150" rx="8" fill="#c3cbf5"/>
+    <rect x="480" y="710" width="60" height="210" rx="8" fill="#667eea"/>
+    <rect x="570" y="760" width="60" height="160" rx="8" fill="#c3cbf5"/>
+    <rect x="660" y="820" width="60" height="100" rx="8" fill="#c3cbf5"/>
+    <rect x="750" y="875" width="60" height="45" rx="8" fill="#c3cbf5"/>
+  </g>
+  <line x1="190" y1="925" x2="830" y2="925" stroke="#e2e8f0" stroke-width="3"/>
+  <text x="500" y="985" text-anchor="middle" font-size="28" fill="#718096">Mar 11        Mar 14        Mar 17</text>
+  <text x="500" y="1075" text-anchor="middle" font-size="36" font-weight="700" fill="#2d3748">Who gets closest?</text>
+  <text x="500" y="1130" text-anchor="middle" font-size="28" fill="#718096">Date · time · weight · name</text>
+  <text x="500" y="1300" text-anchor="middle" font-size="34" fill="#ffffff" opacity="0.92">Free baby pool — one link to share</text>
+
+  <text x="500" y="1442" text-anchor="middle" font-size="34" font-weight="700" fill="#ffffff" opacity="0.95">storkpool.com</text>
+</svg>

@@ -295,6 +295,17 @@ function Home() {
           </p>
         </div>
       </div>
+
+      <div className="card">
+        <h2 style={{ marginBottom: '12px' }}>Guides & printables</h2>
+        <ul style={{ paddingLeft: '20px', color: '#4a5568' }}>
+          <li style={{ marginBottom: '6px' }}><a href="/guides/baby-pool-template/">Free baby pool template</a></li>
+          <li style={{ marginBottom: '6px' }}><a href="/printables/baby-prediction-cards/">Printable baby prediction cards</a></li>
+          <li style={{ marginBottom: '6px' }}><a href="/guides/baby-due-date-pool/">How to run a due date pool</a></li>
+          <li style={{ marginBottom: '6px' }}><a href="/guides/office-baby-pool-ideas/">Office baby pool ideas</a></li>
+          <li><a href="/guides/virtual-baby-shower-games/">Virtual baby shower games</a></li>
+        </ul>
+      </div>
       </div>
     </>
   );

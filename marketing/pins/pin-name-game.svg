@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1500" viewBox="-250 0 1500 1500" font-family="Helvetica, Arial, sans-serif">
+  <rect x="-250" y="0" width="1500" height="1500" fill="#ffffff"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7f7fe8"/><stop offset="100%" stop-color="#8d5fb0"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect width="1000" height="1500" fill="url(#bg)"/>
+  
+  <text x="500" y="200" text-anchor="middle" font-size="74" font-weight="700" fill="#ffffff">The baby name</text>
+  <text x="500" y="288" text-anchor="middle" font-size="74" font-weight="700" fill="#ffffff">guessing game</text>
+  <text x="500" y="376" text-anchor="middle" font-size="74" font-weight="700" fill="#ffffff">for your shower</text>
+  <text x="500" y="500" text-anchor="middle" font-size="36" fill="#ffffff" opacity="0.92">Everyone guesses. Nobody peeks.</text>
+  <rect x="150" y="580" width="700" height="600" rx="22" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="500" y="660" text-anchor="middle" font-size="30" fill="#718096">The baby's name is...</text>
+  <text x="500" y="740" text-anchor="middle" font-size="76" font-weight="700" fill="#667eea">Eleanor</text>
+  <line x1="200" y1="790" x2="800" y2="790" stroke="#e2e8f0" stroke-width="3"/>
+  <text x="230" y="860" font-size="34" fill="#2d3748">🥇  Grandma Jo</text><text x="770" y="860" text-anchor="end" font-size="34" font-weight="700" fill="#667eea">98.5</text>
+  <text x="230" y="940" font-size="34" fill="#2d3748">🥈  Aunt Rachel</text><text x="770" y="940" text-anchor="end" font-size="34" font-weight="700" fill="#667eea">86.0</text>
+  <text x="230" y="1020" font-size="34" fill="#2d3748">🥉  Cousin Dev</text><text x="770" y="1020" text-anchor="end" font-size="34" font-weight="700" fill="#667eea">72.5</text>
+  <text x="500" y="1120" text-anchor="middle" font-size="28" fill="#718096">Close guesses score too — "Ellie" beats "Marcus"</text>
+  <text x="500" y="1290" text-anchor="middle" font-size="34" fill="#ffffff" opacity="0.92">Free · no sign-up for guests</text>
+
+  <text x="500" y="1442" text-anchor="middle" font-size="34" font-weight="700" fill="#ffffff" opacity="0.95">storkpool.com</text>
+</svg>
