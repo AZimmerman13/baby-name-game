@@ -533,7 +533,7 @@ ${bars}
 }
 
 function namePage(entry, ctx) {
-  const { yearTotals, latestYear, ranks, siblings } = ctx;
+  const { yearTotals, latestYear, ranks, siblings, other } = ctx;
   const displayName = entry.name;
   const sexWord = entry.sex === 'F' ? 'girls' : 'boys';
   const years = [];
@@ -544,9 +544,11 @@ function namePage(entry, ctx) {
   const latest = years[years.length - 1];
   const rank = ranks.get(displayName);
   const peak = years.reduce((a, b) => (b.rate > a.rate ? b : a));
-  const firstHalf = years.slice(0, Math.floor(years.length / 2)).reduce((s, p) => s + p.rate, 0);
-  const secondHalf = years.slice(Math.floor(years.length / 2)).reduce((s, p) => s + p.rate, 0);
-  const direction = secondHalf > firstHalf * 1.15 ? 'rising' : secondHalf < firstHalf * 0.85 ? 'falling' : 'steady';
+  // Compare the last 5 years against the 5 before them, so "over the last decade" is literal
+  const avg = (arr) => arr.reduce((s, p) => s + p.rate, 0) / (arr.length || 1);
+  const recent = avg(years.slice(-5));
+  const prior = avg(years.slice(-10, -5));
+  const direction = recent > prior * 1.15 ? 'rising' : recent < prior * 0.85 ? 'falling' : 'steady';
   const trendSentence = {
     rising: `${displayName} has been getting <strong>more</strong> common over the last decade.`,
     falling: `${displayName} has been getting <strong>less</strong> common over the last decade.`,
@@ -568,7 +570,11 @@ function namePage(entry, ctx) {
     title: `How Popular Is the Name ${displayName}? (${latestYear} Data) | StorkPool`,
     description: `${displayName} was given to ${latest.count.toLocaleString()} ${sexWord} in the US in ${latestYear}${rank ? `, ranking #${rank}` : ''}. See the ${TREND_YEARS}-year popularity trend from Social Security Administration data.`,
     heading: `How popular is the name ${displayName}?`,
-    intro: `In ${latestYear}, <strong>${latest.count.toLocaleString()}</strong> ${sexWord} in the United States were named ${displayName}${rank ? `, making it the <strong>#${rank}</strong> most common name for ${sexWord} that year` : ''}. ${trendSentence}`,
+    intro: `In ${latestYear}, <strong>${latest.count.toLocaleString()}</strong> ${sexWord} in the United States were named ${displayName}${rank ? `, making it the <strong>#${rank}</strong> most common name for ${sexWord} that year` : ''}. ${
+      other
+        ? `It is also used for ${other.sex === 'F' ? 'girls' : 'boys'} — ${(other.years.get(latestYear) || 0).toLocaleString()} that year. `
+        : ''
+    }${trendSentence}`,
     jsonLd: {
       '@context': 'https://schema.org',
       '@type': 'Dataset',
@@ -666,21 +672,37 @@ function main() {
     }
     console.log('Reading SSA data…');
     const { data, yearTotals, latestYear } = loadSsaNames(zipPath);
-    let count = 0;
+    const ranksBySex = {};
+    const chosen = new Map(); // lowercase name -> { entry, other }
     for (const sex of ['F', 'M']) {
       const { rows, ranks } = rankMap(data, latestYear, sex);
-      const top = rows.slice(0, NAME_PAGE_LIMIT);
-      top.forEach((entry, i) => {
-        const siblings = [top[i - 2], top[i - 1], top[i + 1], top[i + 2]]
-          .filter(Boolean)
-          .map((e) => e.name);
-        write(`names/${entry.name.toLowerCase()}`, namePage(entry, { yearTotals, latestYear, ranks, siblings }), {
-          priority: 0.6,
-        });
-        count++;
-      });
+      ranksBySex[sex] = ranks;
+      for (const entry of rows.slice(0, NAME_PAGE_LIMIT)) {
+        const key = entry.name.toLowerCase();
+        const existing = chosen.get(key);
+        // Unisex names appear in both lists; keep one page for the more common spelling-sex
+        if (!existing) {
+          chosen.set(key, { entry });
+        } else if (entry.years.get(latestYear) > existing.entry.years.get(latestYear)) {
+          chosen.set(key, { entry, other: existing.entry });
+        } else {
+          existing.other = entry;
+        }
+      }
     }
-    console.log(`Generated ${count} name pages (latest year: ${latestYear})`);
+    const list = [...chosen.values()];
+    list.forEach(({ entry, other }, i) => {
+      const siblings = [list[i - 2], list[i - 1], list[i + 1], list[i + 2]]
+        .filter(Boolean)
+        .map((e) => e.entry.name)
+        .filter((n) => n !== entry.name);
+      write(
+        `names/${entry.name.toLowerCase()}`,
+        namePage(entry, { yearTotals, latestYear, ranks: ranksBySex[entry.sex], siblings, other }),
+        { priority: 0.6 }
+      );
+    });
+    console.log(`Generated ${list.length} name pages (latest year: ${latestYear})`);
   } else {
     // Keep existing name pages in the sitemap even when regenerating without the dataset
     const namesDir = path.join(PUBLIC_DIR, 'names');
