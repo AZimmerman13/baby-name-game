@@ -303,7 +303,8 @@ function Home() {
           <li style={{ marginBottom: '6px' }}><a href="/printables/baby-prediction-cards/">Printable baby prediction cards</a></li>
           <li style={{ marginBottom: '6px' }}><a href="/guides/baby-due-date-pool/">How to run a due date pool</a></li>
           <li style={{ marginBottom: '6px' }}><a href="/guides/office-baby-pool-ideas/">Office baby pool ideas</a></li>
-          <li><a href="/guides/virtual-baby-shower-games/">Virtual baby shower games</a></li>
+          <li style={{ marginBottom: '6px' }}><a href="/guides/virtual-baby-shower-games/">Virtual baby shower games</a></li>
+          <li><a href="/names/">Baby name popularity, ranked</a></li>
         </ul>
       </div>
       </div>

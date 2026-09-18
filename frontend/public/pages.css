@@ -57,6 +57,7 @@ th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--bor
 th { color: var(--muted); font-size: 0.9rem; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .related ul { list-style: none; padding-left: 0; }
+.name-grid { list-style: none; padding-left: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 4px 12px; }
 .site-footer { max-width: 820px; margin: 0 auto; padding: 0 16px 40px; color: rgba(255,255,255,0.9); font-size: 0.9rem; }
 .site-footer a { color: #fff; }
 .chart { width: 100%; height: auto; display: block; margin-bottom: 8px; }

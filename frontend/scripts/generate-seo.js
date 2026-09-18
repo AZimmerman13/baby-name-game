@@ -77,6 +77,7 @@ ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script
       <li><a href="/guides/virtual-baby-shower-games/">Virtual baby shower games</a></li>
       <li><a href="/guides/baby-due-date-pool/">How to run a due date pool</a></li>
       <li><a href="/printables/baby-prediction-cards/">Printable baby prediction cards</a></li>
+      <li><a href="/names/">Baby name popularity, ranked</a></li>
     </ul>
   </nav>
 </main>
@@ -157,6 +158,7 @@ th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--bor
 th { color: var(--muted); font-size: 0.9rem; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .related ul { list-style: none; padding-left: 0; }
+.name-grid { list-style: none; padding-left: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 4px 12px; }
 .site-footer { max-width: 820px; margin: 0 auto; padding: 0 16px 40px; color: rgba(255,255,255,0.9); font-size: 0.9rem; }
 .site-footer a { color: #fff; }
 .chart { width: 100%; height: auto; display: block; margin-bottom: 8px; }
@@ -615,6 +617,43 @@ ${trendChart(years)}
   });
 }
 
+// ─── Name index (hub page: gives the 493 name pages an internal path to crawl) ───
+
+function namesIndexPage(list, latestYear) {
+  const byLetter = new Map();
+  for (const { entry } of list) {
+    const letter = entry.name[0].toUpperCase();
+    if (!byLetter.has(letter)) byLetter.set(letter, []);
+    byLetter.get(letter).push(entry.name);
+  }
+  const letters = [...byLetter.keys()].sort();
+  const jump = letters.map((l) => `<a href="#${l}">${l}</a>`).join(' · ');
+  const sections = letters
+    .map((l) => {
+      const links = byLetter
+        .get(l)
+        .sort()
+        .map((n) => `<li><a href="/names/${n.toLowerCase()}/">${n}</a></li>`)
+        .join('');
+      return `<h2 id="${l}">${l}</h2><ul class="name-grid">${links}</ul>`;
+    })
+    .join('\n');
+  return layout({
+    slug: 'names',
+    title: `Baby Name Popularity: ${list.length} Names Ranked (${latestYear} Data) | StorkPool`,
+    description: `How popular is each baby name? Birth counts and ${TREND_YEARS}-year trends for the ${list.length} most common US baby names, from Social Security Administration data through ${latestYear}.`,
+    heading: 'Baby name popularity',
+    intro: `Birth counts and popularity trends for the <strong>${list.length}</strong> most common US baby names, using Social Security Administration data through ${latestYear}. Pick a name to see how it has risen or fallen.`,
+    body: `<p class="chart-note">Jump to: ${jump}</p>\n${sections}`,
+    cta: {
+      heading: 'Guessing the name is more fun as a game',
+      text: 'Start a free pool and let everyone submit their name predictions. Close guesses still score.',
+      button: 'Create a free pool',
+      source: 'names_index',
+    },
+  });
+}
+
 // ─── Sitemap ─────────────────────────────────────────────────────────────────
 
 function writeSitemap() {
@@ -702,13 +741,18 @@ function main() {
         { priority: 0.6 }
       );
     });
-    console.log(`Generated ${list.length} name pages (latest year: ${latestYear})`);
+    write('names', namesIndexPage(list, latestYear), { priority: 0.8 });
+    console.log(`Generated ${list.length} name pages + index (latest year: ${latestYear})`);
   } else {
     // Keep existing name pages in the sitemap even when regenerating without the dataset
     const namesDir = path.join(PUBLIC_DIR, 'names');
     if (fs.existsSync(namesDir)) {
       for (const dir of fs.readdirSync(namesDir)) {
+        if (!fs.statSync(path.join(namesDir, dir)).isDirectory()) continue;
         pages.push({ loc: `${SITE}/names/${dir}/`, priority: 0.6, changefreq: 'monthly' });
+      }
+      if (fs.existsSync(path.join(namesDir, 'index.html'))) {
+        pages.push({ loc: `${SITE}/names/`, priority: 0.8, changefreq: 'monthly' });
       }
     }
   }
